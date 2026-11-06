@@ -1,0 +1,17 @@
+.Xil/
+*.runs/
+*.sim/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.gen/
+*.log
+*.jou
+*.str
+*.pb
+*.wdb
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.bak
