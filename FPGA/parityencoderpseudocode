@@ -1,0 +1,65 @@
+Input: source_data   //info received from the source computer 
+Output: encoded_data   //result after the parity encoder adds the parity information
+
+1. Set parity_bit = 0   //variable that will eventually contain the parity bit
+                        //acumulator? We could XOR every bit of tbe message into this variable
+
+//goes through every bit in the source message
+2. For each bit in source_data:
+      parity_bit = parity_bit XOR current_bit   //updates the parity value using XOR with the current data bit
+
+//checks whether the system is using odd parity instead of even parity
+3. If odd parity is selected:
+      invert parity_bit   //flips the parity bit so the total number of 1s becomes odd
+
+//adds the calculated parity bit to the original source data
+4. Append parity_bit to source_data
+
+//saves the source data plus parity bit as the encoded message
+5. Store result as encoded_data
+
+//tells the FSM that parity encoding is complete and it can move to the next state
+6. Set enc_done = 1
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+1. Set parity_bit = 0. 
+This creates the variable that will eventually contain the parity bit
+We start at P = 0 because we have not checked any of the data bits yet
+*We can think of it like an accumulator. We are going to XOR every bit of the message into this variable
+
+2. For each bit in source_data:
+      parity_bit = parity_bit XOR current_bit
+*This is the main part of the parity calculation
+The encoder goes through the message one bit at a time and performs XOR
+Lets suppose:
+source_data = 10110010
+We start with P = 0, then: P = 0 XOR 1 = 1, next bit: P = 1 XOR 0 = 1, next: P = 1 XOR 1 = 0,
+next: P = 0 XOR 1 = 1, next: P = 1 XOR 0 = 1, next: P = 1 XOR 0 = 1, next P = 1 XOR 1 = 0, last: P = 0 XOR 0 = 0
+therefore: parity_bit = 0
+
+3. If odd parity is selected:
+      invert parity_bit
+This line exists because there are two common parity rules: even parity and odd parity          
+The XOR calculation naturally gives us the bit needed for parity
+For the example: 10110010, there are already four 1s, which is even
+So with even parity: P = 0 and the transmitted result could be: 10110010 0, there are still four 1s total
+But if we decide to use odd parity, we want the total number of 1s to be odd. Therefore we invert the parity result: 0 -> 1, which gives 10110010 1 and now there are five 1s
+
+4. Append parity_bit to source_data
+Now we take the parity bit we calculated and attach it to the original data.
+For example, with even parity: source = 10110010 and parity = 0, then: encoded_data = 10110010 0
+*The parity bit is extra information that allows the receiver to later check whether an error occurred.
+
+5. Store result as encoded_data
+Now the encoder saves the completed encoded message
+So instead of the FPGA continuing to work with: source_data, it now has: encoded_data
+For example: source_data = 10110010 becomes encoded_data = 101100100
+*In our FSM, this encoded result would eventually be used by the next state: ENCODE_DATA -> TX_SNK_ENCODED
+So the FPGA would prepare this encoded information to be transmitted to the sink computer
+
+6. Set enc_done = 1
+The FSM has this transition ENCODE_DATA -> enc_done = 1 -> TX_SNK_ENCOD
+So while the FPGA is calculating parity: enc_done = 0, and when everything is fineshed: enc_done = 1
+Then the controller knows it can move on and transmit the encoded message
