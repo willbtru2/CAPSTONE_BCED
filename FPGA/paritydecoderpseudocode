@@ -1,0 +1,112 @@
+Input: received_data  //encoded information received back from the sink computer
+Output: recovered_data, error_detected  //original data without the parity bit and the result of the parity check
+
+//splits the received message into the original data bits and the parity bit
+1. Separate the received parity bit from the data
+
+//initializes the parity calculation before checking the received data bits
+2. Set calculated_parity = 0
+
+//goes through every bit in the received data
+3. For each bit in received data:
+
+      //recalculates the parity value by XORing each received data bit
+      calculated_parity = calculated_parity XOR current_bit
+
+//checks whether the system is using odd parity instead of even parity
+4. If odd parity is selected:
+
+      //flips the calculated parity value so it follows the odd-parity rule
+      invert calculated_parity
+
+//checks whether the calculated parity matches the parity bit that was received
+5. Compare calculated_parity with received parity bit
+
+//checks if the parity values match
+6. If calculated_parity equals received parity bit:
+      error_detected = 0  //indicates that no parity error was detected
+   Else:
+      error_detected = 1  //indicates that the parity check detected an error
+
+//removes the extra parity bit after the parity check is complete
+7. Remove the parity bit
+
+//saves the remaining data bits as the recovered source message
+8. Store remaining bits as recovered_data
+
+//tells the FSM that parity checking is complete and it can move to the next state
+9. Set dec_done = 1
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+1. Separate the received parity bit from the data
+The received message contains both the original data and the parity bit that was added by the encoder
+We need to separate them so we can calculate the parity of the data again and compare it with the parity bit that was received
+Lets suppose:
+received_data = 101100100
+Then:
+received source data = 10110010, received parity_bit = 0
+*The data will be used to calculate the parity again, while the received parity bit will be used for comparison
+
+2. Set calculated_parity = 0
+This creates the variable that will contain the parity calculated from the received data
+We start at P = 0 because we have not checked any of the received data bits yet
+*Just like in the encoder, we can think of this as an accumulator. We are going to XOR every received data bit into this variable
+
+3. For each bit in received data:
+     calculated_parity = calculated_parity XOR current_bit
+*This recalculates the parity of the data that came back from the sink computer
+The decoder goes through the received data one bit at a time and performs XOR
+Lets suppose:
+received source data = 10110010
+We start with P = 0, then: P = 0 XOR 1 = 1, next bit: P = 1 XOR 0 = 1, next: P = 1 XOR 1 = 0,
+next: P = 0 XOR 1 = 1, next: P = 1 XOR 0 = 1, next: P = 1 XOR 0 = 1, next P = 1 XOR 1 = 0, last: P = 0 XOR 0 = 0
+therefore: calculated_parity = 0
+
+4. If odd parity is selected:
+      invert calculated_parity
+This works the same way as it did in the encoder
+If we are using even parity, we keep the XOR result as it is
+If we are using odd parity, we invert the calculated parity
+For example: calculated_parity = 0, for even parity: calculated_parity = 0, for odd parity: 0 -> 1
+*This makes sure the decoder is checking the received data using the same parity rule that was used by the encoder
+
+5. Compare calculated_parity with received parity bit
+Now we compare the parity we just calculated with the parity bit that came with the received message
+For example: calculated_parity = 0, and received parity_bit = 0, Since 0 = 0 the two values match
+*If the values match, the parity check passes. If they do not match, an error was detected
+
+6. If calculated_parity equals received parity bit:
+      error_detected = 0   
+   Else:
+      error_detected = 1 
+This tells us the result of the parity check
+If:
+calculated_parity = received parity_bit
+then: 
+error_detected = 0, which means no parity error was detected
+But if:
+calculated_parity != received parity_bit
+then:
+error_detected = 1, which means an error was detected
+For example, lets suppose one data bit was changed and we received: 10110011 0
+The calculated parity of 10110011 would be: calculated_parity = 1, but the received parity bit is still: received parity_bit = 0
+So: 1 != 0, and therefore: error_detected = 1
+*Simple parity tells us that an error occurred, but it does not tell us which bit is wrong or correct that bit
+
+7. Remove the parity bit
+After the parity check is finished, we no longer need the extra parity bit
+We remove it so that only the original data portion remains
+For example: received_data = 101100100, removing the parity bit: 10110010
+*The parity bit was only added to help detect an error. It is not part of the original source information
+
+8. Store remaining bits as recovered_data
+Now the decoder saves the remaining data as: recovered_data
+For example: received_data = 101100100, becomes recovered_data = 10110010
+*In our FSM, this recovered data would eventually be used by the next state: DECODE_CORRUPT -> TX_SRC
+So the FPGA prepares the recovered information to be transmitted back to the source computer
+
+9. Set dec_done = 1
+The FSM has this transition: DECODE_CORRUPT -> dec_done = 1 -> TX_SRC
+So while the FPGA is checking the parity: dec_done = 0, and when the parity check is finished: dec_done = 1
+Then the controller knows that the decoder is finished and it can move to the next state and transmit the result back to the source computer
