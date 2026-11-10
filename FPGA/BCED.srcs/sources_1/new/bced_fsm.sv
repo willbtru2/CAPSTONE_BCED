@@ -126,7 +126,7 @@ module bced_fsm(
             //cand should be checked before moving to encoding. 
             RD_SOURCE: begin
                 if (end_hdr)
-                    next_state = ENCODE_DATA;
+                    next_state = IDLE;
                 else if (msg_buf_full)
                     next_state = ENCODE_DATA;
             end
@@ -158,7 +158,9 @@ module bced_fsm(
             // After sending back, go get the next block for reading (or the end header if the stream is finished)
             TX_SRC: begin
                 if(tx_src_done) begin
-                    next_state = RD_SOURCE;
+                    next_state = IDLE; //If the end header is recieved, go to encoding state to finish the stream
+                else
+                    next_state = RD_SOURCE; //If the end header is not recieved, go back to reading the next block from source software
                 end
             end 
 
@@ -187,7 +189,7 @@ module bced_fsm(
 
             IDLE: begin
                 rx_src_en = 1'b1; // Myst be high to recieve the start header
-                mode_reg_latch = 1'b1; // Pulse high when start header arrives such that coding scheme is stored. 
+                mode_reg_latch = start_hdr; // Pulse high when start header arrives such that coding scheme is stored. 
             end
 
             RD_SOURCE: begin
@@ -210,7 +212,7 @@ module bced_fsm(
             end
 
             DECODE_CORRUPT: begin 
-                dec_start = 1'b1; //one-cycle pulse to start the decoding process 
+                dec_start = entered; //one-cycle pulse to start the decoding process 
             end
 
             TX_SRC: begin
