@@ -31,7 +31,7 @@ module bced_fsm(
     input logic rst_n,         //Active-low reset
 
     // Header inptus
-    input logic [15:0]  header,    //16 bit header that is valid when hdr_valid is high
+    input logic [7:0]  header,    //16 bit header that is valid when hdr_valid is high
     input logic         hdr_valid, //1 cycle pulse meaning start or end header was recieved
     
     // Status Flags
@@ -59,7 +59,7 @@ module bced_fsm(
 
     // Bit of header that signifies whether packet is a start or end header
     // 0 = start , 1 = end 
-    localparam int EOS_BIT = 14;
+    localparam int EOS_BIT = 7;
 
     //State binary code definitions
     typedef enum logic [2:0] {
@@ -89,8 +89,8 @@ module bced_fsm(
     // useful wires for internal logic to detect the start and end of a stream
     logic start_hdr;
     logic end_hdr;
-    assign start_hdr = hdr_valid & ~header[EOS_BIT]; // 1 cycle pulse when a start header is recieved
-    assign end_hdr = hdr_valid & header[EOS_BIT]; // 1 cycle pulse when an end header is recieved
+    assign start_hdr = hdr_valid & ~header[EOS_BIT]; // Bit 7 = 0
+    assign end_hdr = hdr_valid & header[EOS_BIT]; // Bit 7 = 1
 
 
 
@@ -158,9 +158,12 @@ module bced_fsm(
             // After sending back, go get the next block for reading (or the end header if the stream is finished)
             TX_SRC: begin
                 if(tx_src_done) begin
-                    next_state = IDLE; //If the end header is recieved, go to encoding state to finish the stream
-                else
-                    next_state = RD_SOURCE; //If the end header is not recieved, go back to reading the next block from source software
+                    if (header[EOS_BIT]) // Last block was sent, so go back to idle and wait for the next stream
+                        next_state = IDLE;
+                    else // Otherwise go back to reading the next block from the source software
+                        next_state = RD_SOURCE;
+                end else begin
+                    next_state = TX_SRC; //Hold until the TX is done
                 end
             end 
 
@@ -220,8 +223,8 @@ module bced_fsm(
             end
 
             default: //outputs stay 0
-             begin    
-             end 
+            begin    
+            end 
         endcase
     end
     //Current state code output for debugging purposes on the LEDs.
