@@ -27,13 +27,13 @@ module uart_tx #(
     parameter int CLK_FREQ_HZ = 100_000_000,
     parameter int BAUD_RATE = 115_200
 )(
-    input clk, // 100 MHz system clock
-    input rst_n, // Active-low reset (pin c12 on Nexys A7-100T)
-    input tx_start, //1 cycle pulse to start transmission
-    input [7:0] tx_data, // 8-bit data to be transmitted
-    input tx_pin,   // UART TX output pin (pin d4 on FPGA, d14 on pmod header)
-    input tx_busy,  // UART TX busy signal; HIGH while transmission is in progress
-    input tx_done   // UART TX done signal; HIGH for 1 cycle when transmission is complete
+    input logic clk, // 100 MHz system clock
+    input logic rst_n, // Active-low reset (pin c12 on Nexys A7-100T)
+    input logic tx_start, //1 cycle pulse to start transmission
+    input logic [7:0] tx_data, // 8-bit data to be transmitted
+    output logic tx_pin,   // UART TX output pin (pin d4 on FPGA, d14 on pmod header)
+    output logic tx_busy,  // UART TX busy signal; HIGH while transmission is in progress
+    output logic tx_done   // UART TX done signal; HIGH for 1 cycle when transmission is complete
     );
 
     localparam int CLKS_PER_BIT = CLK_FREQ_HZ / BAUD_RATE; //863 cycles per bit
@@ -89,21 +89,21 @@ module uart_tx #(
 
                 START: begin
                     tx_pin <= 1'b0; // Start bit is low this (RTS - active low)
-                    if (clk_cnt < CLKS_PER_BIT - 1) begin //For loop for counting down clocks cycles
-                        clk_cnt <= clk_cnt + 1'd1;
+                    if (clk_count < CLKS_PER_BIT - 1) begin //For loop for counting down clocks cycles
+                        clk_count <= clk_count + 1'd1;
                     end else begin  
-                        clk_cnt <= clk_cnt + 1'b1;
+                        clk_count <= clk_count + 1'b1;
                         state <= DATA; 
                     end
                 end
 
                 DATA: begin
                     tx_pin <= data_reg[bit_idx]; //LSB (first) - > MSB (last) by RS232/Uart protocol
-                    if(clk_cnt < CLKS_PER_BIT - 1)begin
-                        clk_cnt <= clk_cnt + 1'b1;
+                    if(clk_count < CLKS_PER_BIT - 1)begin
+                        clk_count <= clk_count + 1'b1;
                     end else begin
-                        clk_cnt <= 16'd0; 
-                        if(bit_idx < 3'd7;) begin
+                        clk_count <= 16'd0; 
+                        if(bit_idx < 3'd7) begin
                         bit_idx <= bit_idx + 1'b1;
                         end else begin
                             bit_idx <= 3'd0;
@@ -114,10 +114,10 @@ module uart_tx #(
 
                 STOP: begin
                     tx_pin <= 1'b1;
-                    if (clk_cnt < CLKS_PER_BIT - 1) begin
-                        clk_cnt <= clk_cnt + 1'b1;
+                    if (clk_count < CLKS_PER_BIT - 1) begin
+                        clk_count <= clk_count + 1'b1;
                     end else begin
-                        clk_cnt <= 16'd0;
+                        clk_count <= 16'd0;
                         tx_busy <= 1'b0; 
                         tx_done <= 1'b1; //Byte has been transmitted
                         state <= IDLE; 
