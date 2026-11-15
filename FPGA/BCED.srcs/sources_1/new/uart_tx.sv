@@ -1,13 +1,13 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
-// Engineer: 
+// Engineer: Hazael Magino
 // 
 // Create Date: 11/12/2026 10:12:16 PM
 // Design Name: UART Transmitter Module
 // Module Name: uart_tx
 // Project Name: BCED
-// Target Devices: 
+// Target Devices: Digilent Nexys A7-100T (xc7a100tcsg324-1)
 // Tool Versions: 
 // Description: This module implements a 8-N-1 UART Transmitter for the FPGA.
 // It operates with the system 100MHz system clock and operates at a 115200 baud rate.

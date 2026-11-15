@@ -31,7 +31,7 @@ module bced_fsm(
     input logic rst_n,         //Active-low reset
 
     // Header inptus
-    input logic [7:0]  header,    //16 bit header that is valid when hdr_valid is high
+    input logic [7:0]  header,    //8 bit header that is valid when hdr_valid is high
     input logic         hdr_valid, //1 cycle pulse meaning start or end header was recieved
     
     // Status Flags
@@ -91,9 +91,6 @@ module bced_fsm(
     logic end_hdr;
     assign start_hdr = hdr_valid & ~header[EOS_BIT]; // Bit 7 = 0
     assign end_hdr = hdr_valid & header[EOS_BIT]; // Bit 7 = 1
-
-
-
 
     //Sequential State Register
     // Updates on every rising edge of the clock or when the reset button is pressed (active low)
@@ -155,15 +152,12 @@ module bced_fsm(
                     next_state = TX_SRC;
             end
 
-            // After sending back, go get the next block for reading (or the end header if the stream is finished)
+            // After sending back, go get the next block for reading 
             TX_SRC: begin
                 if(tx_src_done) begin
-                    if (header[EOS_BIT]) // Last block was sent, so go back to idle and wait for the next stream
-                        next_state = IDLE;
-                    else // Otherwise go back to reading the next block from the source software
-                        next_state = RD_SOURCE;
+                    next_state = RD_SOURCE;
                 end else begin
-                    next_state = TX_SRC; //Hold until the TX is done
+                    next_state = TX_SRC; 
                 end
             end 
 
