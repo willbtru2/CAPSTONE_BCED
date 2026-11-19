@@ -35,7 +35,7 @@
 
 module led_driver(
     input clk, // 100 MHz clock 
-    input rst_n, //Active Low -asynch 
+    input wire rst_n, //Active Low -asynch 
     input [7:0] data_in, // 8 bit data [7:4] = Left anode (digit) [3:0] = Right anode (right)
     output reg [7:0] an, //Enable lines for anodes function on active low architecture (0 = ON)
     output reg [6:0] seg //Cathode segment (active-low)

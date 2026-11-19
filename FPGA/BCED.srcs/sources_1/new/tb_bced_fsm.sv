@@ -45,6 +45,19 @@ module tb_bced_fsm;
     // FSM output
     wire [2:0] state_code;  //shows the current state using 3 bits
 
+    //Enable signals
+    wire rx_src_en;
+    wire src_bug_write;
+    wire rx_snk_en;
+    wire snk_buf_wr; 
+
+    //Pulse signals
+    wire mode_reg_latch;
+    wire enc_start;
+    wire tx_snk_start;
+    wire dec_start; 
+    wire tx_src_start;
+
     //counts how many tests fail
     //this increases by one whenever the FSM enters an unexpected state
     integer failed_count = 0;  
@@ -62,7 +75,18 @@ module tb_bced_fsm;
         .snk_buf_full(snk_buf_full),
         .dec_done(dec_done),
         .tx_src_done(tx_src_done),
-        .state_code(state_code)  //this is connected among the outputs because its just checking the states
+        .state_code(state_code),  //this is connected among the outputs because its just checking the states
+
+        //Connected control outputs
+        .rx_src_en(rx_src_en),
+        .mode_reg_latch(mode_reg_latch),
+        .src_buf_write(src_buf_write),
+        .enc_start(enc_start),
+        .tx_snk_start(tx_snk_start),
+        .rx_snk_en(rx_snk_en),
+        .snk_buf_wr(snk_buf_wr),
+        .dec_start(dec_start),
+        .tx_src_start(tx_src_start)
     );
 
     //clock generation
@@ -97,7 +121,7 @@ module tb_bced_fsm;
         @(negedge clk);
         //set the header to 08 in hexadecimal, which is 00001000 in binary
         //bit 7 is 0, meaning this is a start header
-        header = 8'h08;  
+        header = 8'h09; //Binary: 0000_1001 (sync bits make it 8'h01)  
         hdr_valid = 1;  //header is valid
 
         @(posedge clk);
@@ -110,6 +134,12 @@ module tb_bced_fsm;
             $display("RD_SOURCE passed");
         end
 
+        if (src_buf_write !== 1'b1) begin
+            $display("Fail src_buf_write is 0, expected 1 in RD_SOURCE state");
+            failed_count++;
+        end else begin
+            $display("src_buf_write asserted correctly");
+        end
 
         //test 2: RD_SOURCE -> ENCODE_DATA
         //tell the FSM that the source buffer is full 
@@ -126,6 +156,23 @@ module tb_bced_fsm;
         end else begin
             $display("ENCODE_DATA passed");
         end
+
+        if (enc_start !== 1'b1)begin
+            $display("enc_start did NOT pulse HIGH on entering ENCODE_DATA!");
+            failed_count++;
+        end else begin
+            $display("Pass: enc_start pulsed HIGH on Cycle 1"); 
+        end
+
+        @(posedge clk);
+        #1;
+        if(enc_start != 1'b0)begin
+            $display("Failed: enc_start is still High! Expected 0 on 2nd clock into encode data"); 
+            failed_count++;
+        end else begin 
+            $display("Passed enc_start cleared to 0 on Cycle 2 (valid 1-cycle pulse)");
+        end
+
 
 
         //test 3: ENCODE_DATA -> TX_SNK_ENCODED
@@ -171,17 +218,27 @@ module tb_bced_fsm;
         @(posedge clk);
         #1;
         //DECODE_CORRUPT has state code 101
-        if (state_code !== 3'b101) begin
+        if (state_code !== 3'b101 || dec_start !== 1'b1) begin
             $display("DECODE_CORRUPT failed");
             failed_count++;
         end else begin
-            $display("DECODE_CORRUPT passed");
+            $display("DECODE_CORRUPT passed and dec_start pulsed high");
         end
 
+        //Verify pulse cleared
+        @(posedge clk); 
+        #1; 
+        if (dec_start !== 1'b0) begin 
+            $display("Fail: dec_start stuck HIGH on Cycle 2!");
+            failed_count++; 
+        end else begin 
+            $display("Passed: dec_start cleared on Cycle 2");
+        end
 
         //test 6: DECODE_CORRUPT -> TX_SRC
         //tell the FSM that the decoder finished
         @(negedge clk);
+        #1;
         snk_buf_full = 0;  //clear the sink buffer signal
         dec_done = 1;  //decoding is complete
 
@@ -205,6 +262,10 @@ module tb_bced_fsm;
 
         @(posedge clk);
         #1;
+
+        //Set header to 0xff (bit 7 = 1)
+        header = 8'hFF;
+        hdr_valid = 0; // No valid header  
         //RD_SOURCE has state code 001
         if (state_code !== 3'b001) begin
             $display("Return to RD_SOURCE failed");
@@ -221,7 +282,7 @@ module tb_bced_fsm;
         //set the header to 80 in hexadecimal, which is 10000000 in binary
         //bit 7 is 1, meaning this is an end header, which tells the FSM
         //that the message is finished and no more data needs to be received
-        header = 8'h80;  
+        header = 8'h81; //Binary 1000_0001 (Bit 7 = 1 + Sync_signature bits = 2'b01)
         hdr_valid = 1;  //header is valid
 
         @(posedge clk);

@@ -60,6 +60,7 @@ module bced_fsm(
     // Bit of header that signifies whether packet is a start or end header
     // 0 = start , 1 = end 
     localparam int EOS_BIT = 7;
+    localparam logic [1:0] SYNC_B = 2'b01;
 
 
     //State binary code definitions
@@ -90,8 +91,8 @@ module bced_fsm(
     // useful wires for internal logic to detect the start and end of a stream
     logic start_hdr;
     logic end_hdr;
-    assign start_hdr = hdr_valid && (header[1:0] == SYNC_PATTERN) && (!header[EOS_BIT]); // Bit 7 = 0
-    assign end_hdr = hdr_valid && (header[1:0] == SYNC_PATTERN) && (header[EOS_BIT]); // Bit 7 = 1
+    assign start_hdr = hdr_valid && (header[1:0] == SYNC_B) && (!header[EOS_BIT]); // Bit 7 = 0
+    assign end_hdr = hdr_valid && (header[1:0] == SYNC_B) && (header[EOS_BIT]); // Bit 7 = 1
 
     //Sequential State Register
     // Updates on every rising edge of the clock or when the reset button is pressed (active low)
