@@ -47,7 +47,7 @@ module tb_bced_fsm;
 
     //Enable signals
     wire rx_src_en;
-    wire src_bug_write;
+    wire src_buf_write;
     wire rx_snk_en;
     wire snk_buf_wr; 
 

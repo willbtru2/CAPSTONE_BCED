@@ -53,15 +53,6 @@ module uart_tx #(
 
     //Sequential logic for UART transmission
     always_ff @(posedge clk or negedge rst_n) begin //
-            
-            // Initialize all registers values to prevent inferred latches
-            clk_count <= 16'd0;
-            bit_idx <= 3'd0;
-            data_reg <= 8'd0;
-            tx_pin <= 1'b1; // UART IDLE is high
-            tx_busy <= 1'b0;
-            tx_done <= 1'b0; 
-
         if (!rst_n) begin // Active-low reset
             state <= IDLE;
             clk_count <= 16'd0;
@@ -72,7 +63,6 @@ module uart_tx #(
             tx_done <= 1'b0; 
         end else begin
             tx_done <= 1'b0;
-
             case (state)
                 IDLE: begin
                     tx_pin <= 1'b1;
@@ -92,7 +82,7 @@ module uart_tx #(
                     if (clk_count < CLKS_PER_BIT - 1) begin //For loop for counting down clocks cycles
                         clk_count <= clk_count + 1'd1;
                     end else begin  
-                        clk_count <= clk_count + 1'b1;
+                        clk_count <= 16'd0;
                         state <= DATA; 
                     end
                 end

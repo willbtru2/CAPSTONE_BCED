@@ -88,12 +88,14 @@ module uart_rx#(
                 end
 
                 START: begin
-                    if (clk_cnt == HALF_BIT_CLKS) begin
-                        if(rx_sync_2 == 1'b0) begin
-                            clk_cnt <= 16'd0; // Valid start bit confirmed
-                            state <= DATA;
+                    // Wait unitl the middle of the start bit 
+                    if (clk_cnt == HALF_BIT_CLKS - 1) begin
+                        // Verify the line is still low
+                        if(rx_sync_2 == 1'b0)begin
+                            clk_cnt <= 16'd0; //Reset counter so data samples occur on the center of the 868 bit period
+                            state <= DATA; 
                         end else begin
-                            state <= IDLE; //False start glitch, return to IDLE
+                            state <= DATA; //Noise glitch .. no sync verification bit present, reject data here
                         end
                     end else begin
                         clk_cnt <= clk_cnt + 1'b1;
@@ -122,7 +124,8 @@ module uart_rx#(
                     end else begin
                         clk_cnt <= 16'd0;
                         rx_busy <= 1'b0;
-                        //Check if stop bit is high
+
+                        //Check for valid frame(stop bit should be 1)
                         if(rx_sync_2 == 1'b1) begin
                             rx_data <= shift_reg;
                             rx_byte_valid <= 1'b1; //1 cycle valid pulse

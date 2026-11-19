@@ -36,7 +36,7 @@ module bced_top#(
 
     //Source PC interface 
     input logic uart_txd_in, //Pin C4 (Data from source PC to FPGA Rx)
-    input logic uart_rxd_out, //Pin D4 (Data from FPGA Tx#1 to source PC)
+    output logic uart_rxd_out, //Pin D4 (Data from FPGA Tx#1 to source PC)
 
     //Sink PC Interface 
     //output logic jb_tx, //Pins D14 (JB[7]: Encoded data to sink PC) - to be implemented in spring
@@ -191,7 +191,7 @@ module bced_top#(
         .enc_done(enc_done),
         .snk_buf_full(snk_buf_full),
         .dec_done(dec_done),
-        .tx_snk_done(tx_src_done),
+        .tx_snk_done(tx_snk_done),
         .tx_src_done(tx_src_done),
 
         .rx_src_en(rx_src_en),
