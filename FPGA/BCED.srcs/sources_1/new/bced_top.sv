@@ -226,7 +226,7 @@ module bced_top#(
     led_driver u_led_driver(
         .clk(clk),
         .rst_n(rst_n),
-        .data_in({1'b0, state_code, header_reg[6:3]}), //Data to be displayed
+        .data_in({1'b0, state_code, header_reg[6:3]}), //Data to be displayed (This need to be assigned Led_state...will implement later)
         .an(an),
         .seg(seg)
     );
